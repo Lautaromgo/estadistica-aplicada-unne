@@ -1,0 +1,11 @@
+# Gráficos que generen las notebooks
+outputs/
+
+# ── Sistema y entorno ──────────────────────────────────────────────────────
+.DS_Store
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/

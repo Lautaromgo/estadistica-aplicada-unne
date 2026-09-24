@@ -1,0 +1,6 @@
+# Versiones con las que se ejecutó y verificó todo el material.
+pandas>=2.0,<3
+numpy>=1.24,<2.1
+matplotlib>=3.8
+seaborn>=0.13
+jupyter
