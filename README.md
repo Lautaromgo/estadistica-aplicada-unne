@@ -33,8 +33,7 @@ estadistica-aplicada-unne/
 
 ## Cómo ponerlo a andar
 
-Necesitás **Git** y **Python 3.10, 3.11 o 3.12**. Todavía no se puede usar 3.13: algunas
-de las versiones de `requirements.txt` no tienen soporte para 3.13.
+Necesitás **Git** y **Python 3.10, 3.11 o 3.12**.
 
 Para ver qué versión tenés instalada:
 

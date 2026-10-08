@@ -33,8 +33,11 @@ Capas
             detectar_outliers, comparar_segmentos  -> ¿se ven distintos? ¿qué los relaciona?
 - Punto 4 : graficar_relacion, dashboard_segmento   -> ¿cómo lo muestro y lo cuento?
 - Punto 5 : intervalo_confianza_formula, intervalo_confianza,
-            comparar_dos_grupos, graficar_bootstrap  -> ¿la diferencia es real o es azar?
+            comparar_dos_grupos, contraste_dos_grupos,
+            graficar_bootstrap                       -> ¿la diferencia es real o es azar?
 """
+
+from math import erf, sqrt
 
 import numpy as np
 import pandas as pd
@@ -841,6 +844,68 @@ def comparar_dos_grupos(df, columna_grupo, columna_valor, grupo_a, grupo_b,
             "dif_observada": a.mean() - b.mean(),
             "inferior": inferior, "superior": superior,
             "incluye_cero": incluye_cero, "distribucion": diferencias,
+            "conclusion": conclusion}
+
+
+def p_valor(z):
+    """Probabilidad de quedar a |z| errores estándar o más de H0, por puro azar.
+
+    Es el área de las dos colas de la campana (normal estándar) más allá de ±z.
+    Se calcula con `math.erf` para no depender de scipy.
+    """
+    return 2 * (1 - 0.5 * (1 + erf(abs(z) / sqrt(2))))
+
+
+def contraste_dos_grupos(df, columna_grupo, columna_valor, grupo_a, grupo_b,
+                         confianza=0.95):
+    """Contraste de hipótesis para la diferencia de medias entre dos grupos.
+
+    LA LÓGICA, EN TRES PASOS
+    ------------------------
+    1. Suponemos H0: "no hay diferencia real". Si fuera cierta, la diferencia
+       observada debería rondar el 0 con una campana de ancho EE_dif.
+    2. Medimos a cuántos errores estándar quedó lo observado:
+
+            z = (diferencia observada − 0) / EE_dif
+
+       donde EE_dif = √(EE_a² + EE_b²): las incertidumbres de dos mediciones
+       se suman en cuadrados, como en Pitágoras.
+    3. El p-valor dice qué tan seguido veríamos algo así de extremo si H0 fuera
+       cierta. Si |z| supera el Z del nivel de confianza (1,96 al 95%), o sea si
+       p < α, se rechaza H0.
+
+    ES LA MISMA CAMPANA QUE EL INTERVALO
+    ------------------------------------
+    Rechazar H0 al 95% es exactamente lo mismo que decir que el IC 95% de la
+    diferencia no cruza el 0. `comparar_dos_grupos` llega a la misma conclusión
+    por bootstrap.
+
+    NO RECHAZAR NO ES PROBAR
+    ------------------------
+    Si no se rechaza H0, la conclusión es "falta de pruebas", no "son iguales".
+    """
+    a = df.loc[df[columna_grupo] == grupo_a, columna_valor].dropna()
+    b = df.loc[df[columna_grupo] == grupo_b, columna_valor].dropna()
+
+    dif = a.mean() - b.mean()
+    ee_dif = np.sqrt(a.var(ddof=1) / len(a) + b.var(ddof=1) / len(b))
+    z = dif / ee_dif
+    p = p_valor(z)
+    z_critico = _z(confianza)
+    rechaza = bool(abs(z) > z_critico)
+
+    conclusion = (
+        f"|z| = {abs(z):.2f} > {z_critico} → se rechaza H0: la diferencia entre "
+        f"{grupo_a} y {grupo_b} es real."
+        if rechaza else
+        f"|z| = {abs(z):.2f} ≤ {z_critico} → no se rechaza H0: falta de pruebas "
+        f"para afirmar que {grupo_a} y {grupo_b} son distintos."
+    )
+
+    return {"grupo_a": grupo_a, "grupo_b": grupo_b, "n_a": len(a), "n_b": len(b),
+            "dif_observada": dif, "ee_dif": ee_dif, "z": z, "p_valor": p,
+            "z_critico": z_critico, "rechaza_h0": rechaza,
+            "inferior": dif - z_critico * ee_dif, "superior": dif + z_critico * ee_dif,
             "conclusion": conclusion}
 
 

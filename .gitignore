@@ -9,3 +9,6 @@ __pycache__/
 .venv/
 venv/
 env/
+
+# Material docente (soluciones, rúbrica, generador): no se publica
+docente/
